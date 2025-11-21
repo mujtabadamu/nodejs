@@ -72,11 +72,12 @@ This guide will walk you through deploying your backend API with PostgreSQL data
    PORT=3001
    
    # Copy these from your database "Info" tab:
-   DB_HOST=dpg-xxxxxxxxxxxxx-a.oregon-postgres.render.com
+   
+   DB_HOST=dpg-d4gf970gjchc73akg4tg-a
    DB_PORT=5432
-   DB_DATABASE=express_crud
-   DB_USER=postgres
-   DB_PASSWORD=<from database connection info>
+   DB_DATABASE=express_crud_gv3p
+   DB_USER=express_crud_gv3p_user
+   DB_PASSWORD=7VvpoRHOYMwjkABBmNSF7EftUoNt0JWK
    
    # Generate a secure JWT secret (run this in terminal):
    # node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
