@@ -13,10 +13,10 @@ import errorHandler from "./middlewares/errorHandler";
 import createUserTable from "./data/createUserTable";
 import createTables from "./data/createTables";
 import createAITables from "./data/createAITables";
+import migrateAddUserIdAndTitle from "./data/migrateAddUserIdAndTitle";
 
 // Load environment variables with explicit path
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
 
 
 const app = express();
@@ -47,6 +47,8 @@ const initDatabase = async () => {
     await createUserTable();
     await createTables();
     await createAITables();
+    // Run migration for existing databases
+    await migrateAddUserIdAndTitle();
     console.log("✅ Database initialized successfully");
   } catch (error) {
     console.error("❌ Error initializing database:", error);

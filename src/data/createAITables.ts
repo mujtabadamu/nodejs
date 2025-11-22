@@ -37,11 +37,14 @@ const createAITables = async () => {
         id SERIAL PRIMARY KEY,
         device_id VARCHAR(64) NOT NULL,
         ai_avatar VARCHAR(20) NOT NULL,
+        user_id INTEGER,
+        title VARCHAR(200) DEFAULT 'New Conversation',
         started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         message_count INTEGER DEFAULT 0,
         is_active BOOLEAN DEFAULT true,
-        FOREIGN KEY (device_id) REFERENCES locations(device_id) ON DELETE CASCADE
+        FOREIGN KEY (device_id) REFERENCES locations(device_id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES admin_users(id) ON DELETE SET NULL
       );
     `);
     console.log("✅ Chat conversations table created");

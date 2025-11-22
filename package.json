@@ -9,7 +9,8 @@
     "start": "node dist/index.js",
     "postbuild": "echo '✅ Build complete! Files in dist/'",
     "create-admin": "ts-node src/utils/createFirstAdmin.ts",
-    "create-admin:default": "ts-node src/utils/createFirstAdmin.ts --default"
+    "create-admin:default": "ts-node src/utils/createFirstAdmin.ts --default",
+    "migrate:add-user-id": "ts-node src/data/migrateAddUserIdAndTitle.ts"
   },
   "keywords": [],
   "author": "",
