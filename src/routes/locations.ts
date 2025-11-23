@@ -7,7 +7,7 @@ const router = Router();
 // Rate limiter for adding locations (prevent abuse)
 const addLocationLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 10, // Max 10 requests per minute per IP
+  max: 30, // Max 30 requests per minute per IP
   message: { error: "Too many requests. Please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
