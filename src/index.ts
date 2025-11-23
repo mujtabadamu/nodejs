@@ -14,6 +14,7 @@ import createUserTable from "./data/createUserTable";
 import createTables from "./data/createTables";
 import createAITables from "./data/createAITables";
 import migrateAddUserIdAndTitle from "./data/migrateAddUserIdAndTitle";
+import migrateAddRiskLevel from "./data/migrateAddRiskLevel";
 
 // Load environment variables with explicit path
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -47,8 +48,9 @@ const initDatabase = async () => {
     await createUserTable();
     await createTables();
     await createAITables();
-    // Run migration for existing databases
+    // Run migrations for existing databases
     await migrateAddUserIdAndTitle();
+    await migrateAddRiskLevel();
     console.log("✅ Database initialized successfully");
   } catch (error) {
     console.error("❌ Error initializing database:", error);

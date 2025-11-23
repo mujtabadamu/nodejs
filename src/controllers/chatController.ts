@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import chatModel from "../models/chatModel";
 import userProfileModel from "../models/userProfileModel";
 import { chatWithAI, getAvatarGreeting, generateConversationTitle, AvatarType, AI_AVATARS } from "../services/aiService";
+import { analyzeMessageRisk, analyzeConversationRisk, RiskLevel } from "../services/riskAnalysisService";
+import { sanitizeProfile } from "../utils/profileSanitizer";
 import Joi from "joi";
 
 class ChatController {
@@ -122,6 +124,13 @@ class ChatController {
         content: msg.content,
       }));
 
+      // Analyze message for risk
+      const messageRisk = analyzeMessageRisk(message);
+      console.log(`⚠️ Risk Analysis - Level: ${messageRisk.riskLevel}, Score: ${messageRisk.riskScore}`, messageRisk.flags.length > 0 ? `Flags: ${messageRisk.flags.join(', ')}` : '');
+
+      // Analyze full conversation for cumulative risk
+      const conversationRisk = analyzeConversationRisk(conversationHistory.concat([{ role: 'user', content: message }]));
+
       // Get AI response
       const aiResponse = await chatWithAI(
         conversation.aiAvatar as AvatarType,
@@ -138,10 +147,31 @@ class ChatController {
         extractedInfo: aiResponse.extractedInfo,
       });
 
-      // Update user profile if info was extracted
+      // Update user profile with extracted info and risk assessment
+      const profileUpdates: any = {};
+      
       if (aiResponse.extractedInfo) {
         console.log("📝 Extracted info:", aiResponse.extractedInfo);
-        await userProfileModel.updateProfile(deviceId, aiResponse.extractedInfo);
+        Object.assign(profileUpdates, aiResponse.extractedInfo);
+      }
+      
+      // Update risk level based on conversation analysis (use the higher of message or conversation risk)
+      const finalRiskScore = Math.max(messageRisk.riskScore, conversationRisk.riskScore);
+      const finalRiskLevel = finalRiskScore <= 30 ? RiskLevel.SAFE :
+                            finalRiskScore <= 50 ? RiskLevel.LOW :
+                            finalRiskScore <= 70 ? RiskLevel.MEDIUM :
+                            finalRiskScore <= 85 ? RiskLevel.HIGH : RiskLevel.CRITICAL;
+      
+      profileUpdates.riskLevel = finalRiskLevel;
+      profileUpdates.riskScore = finalRiskScore;
+      profileUpdates.riskFlags = [...new Set([...messageRisk.flags, ...conversationRisk.flags])];
+      profileUpdates.lastRiskAnalysis = new Date();
+      
+      await userProfileModel.updateProfile(deviceId, profileUpdates);
+      
+      // Log high-risk users
+      if (finalRiskLevel === RiskLevel.HIGH || finalRiskLevel === RiskLevel.CRITICAL) {
+        console.log(`🚨 HIGH RISK USER DETECTED - Device: ${deviceId}, Level: ${finalRiskLevel}, Score: ${finalRiskScore}`);
       }
 
       // Auto-generate title if this is the first user message (messageCount = 2: greeting + first user message)
@@ -217,7 +247,7 @@ class ChatController {
     }
   }
 
-  // GET /api/chat/profile/:deviceId - Get user profile
+  // GET /api/chat/profile/:deviceId - Get user profile (user-facing, no risk data)
   async getUserProfile(req: Request, res: Response) {
     try {
       const { deviceId } = req.params;
@@ -231,9 +261,12 @@ class ChatController {
         });
       }
 
+      // Sanitize profile - remove risk fields for regular users
+      const sanitizedProfile = sanitizeProfile(profile);
+
       res.status(200).json({
         success: true,
-        profile,
+        profile: sanitizedProfile,
       });
     } catch (error: any) {
       console.error("Error getting profile:", error);

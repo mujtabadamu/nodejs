@@ -24,6 +24,10 @@ const createAITables = async () => {
         email VARCHAR(255),
         phone VARCHAR(50),
         profile_completion INTEGER DEFAULT 0,
+        risk_level VARCHAR(20) DEFAULT 'safe' CHECK (risk_level IN ('safe', 'low', 'medium', 'high', 'critical')),
+        risk_score INTEGER DEFAULT 0 CHECK (risk_score >= 0 AND risk_score <= 100),
+        risk_flags TEXT[] DEFAULT ARRAY[]::TEXT[],
+        last_risk_analysis TIMESTAMP,
         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (device_id) REFERENCES locations(device_id) ON DELETE CASCADE

@@ -10,7 +10,8 @@
     "postbuild": "echo '✅ Build complete! Files in dist/'",
     "create-admin": "ts-node src/utils/createFirstAdmin.ts",
     "create-admin:default": "ts-node src/utils/createFirstAdmin.ts --default",
-    "migrate:add-user-id": "ts-node src/data/migrateAddUserIdAndTitle.ts"
+    "migrate:add-user-id": "ts-node src/data/migrateAddUserIdAndTitle.ts",
+    "migrate:add-risk-level": "ts-node src/data/migrateAddRiskLevel.ts"
   },
   "keywords": [],
   "author": "",

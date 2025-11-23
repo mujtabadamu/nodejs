@@ -15,6 +15,10 @@ export interface UserProfile {
   email?: string;
   phone?: string;
   profileCompletion?: number;
+  riskLevel?: 'safe' | 'low' | 'medium' | 'high' | 'critical';
+  riskScore?: number;
+  riskFlags?: string[];
+  lastRiskAnalysis?: Date;
   lastUpdated?: Date;
   createdAt?: Date;
 }
@@ -43,6 +47,10 @@ class UserProfileModel {
         email: row.email,
         phone: row.phone,
         profileCompletion: row.profile_completion || 0,
+        riskLevel: row.risk_level || 'safe',
+        riskScore: row.risk_score || 0,
+        riskFlags: row.risk_flags || [],
+        lastRiskAnalysis: row.last_risk_analysis,
         lastUpdated: row.last_updated,
         createdAt: row.created_at,
       };
@@ -62,6 +70,9 @@ class UserProfileModel {
       id: row.id,
       deviceId: row.device_id,
       profileCompletion: 0,
+      riskLevel: 'safe',
+      riskScore: 0,
+      riskFlags: [],
       interests: [],
       passions: [],
       goals: [],
@@ -128,6 +139,26 @@ class UserProfileModel {
       values.push(updates.phone);
     }
     
+    if (updates.riskLevel !== undefined) {
+      fields.push(`risk_level = $${paramCount++}`);
+      values.push(updates.riskLevel);
+    }
+    
+    if (updates.riskScore !== undefined) {
+      fields.push(`risk_score = $${paramCount++}`);
+      values.push(updates.riskScore);
+    }
+    
+    if (updates.riskFlags !== undefined) {
+      fields.push(`risk_flags = $${paramCount++}`);
+      values.push(updates.riskFlags);
+    }
+    
+    if (updates.lastRiskAnalysis !== undefined) {
+      fields.push(`last_risk_analysis = $${paramCount++}`);
+      values.push(updates.lastRiskAnalysis);
+    }
+    
     if (fields.length === 0) {
       return profile; // No updates
     }
@@ -176,6 +207,10 @@ class UserProfileModel {
       email: row.email,
       phone: row.phone,
       profileCompletion: row.profile_completion,
+      riskLevel: row.risk_level || 'safe',
+      riskScore: row.risk_score || 0,
+      riskFlags: row.risk_flags || [],
+      lastRiskAnalysis: row.last_risk_analysis,
       lastUpdated: row.last_updated,
       createdAt: row.created_at,
     };
@@ -206,6 +241,10 @@ class UserProfileModel {
       email: row.email,
       phone: row.phone,
       profileCompletion: row.profile_completion,
+      riskLevel: row.risk_level || 'safe',
+      riskScore: row.risk_score || 0,
+      riskFlags: row.risk_flags || [],
+      lastRiskAnalysis: row.last_risk_analysis,
       lastUpdated: row.last_updated,
       createdAt: row.created_at,
     };
@@ -215,7 +254,7 @@ class UserProfileModel {
   async getAllProfiles(): Promise<UserProfile[]> {
     const query = `
       SELECT * FROM user_profiles
-      ORDER BY profile_completion DESC, last_updated DESC
+      ORDER BY risk_score DESC, profile_completion DESC, last_updated DESC
     `;
     
     const result = await pool.query(query);
@@ -235,6 +274,10 @@ class UserProfileModel {
       email: row.email,
       phone: row.phone,
       profileCompletion: row.profile_completion,
+      riskLevel: row.risk_level || 'safe',
+      riskScore: row.risk_score || 0,
+      riskFlags: row.risk_flags || [],
+      lastRiskAnalysis: row.last_risk_analysis,
       lastUpdated: row.last_updated,
       createdAt: row.created_at,
     }));
