@@ -25,11 +25,19 @@ const PORT = process.env.PORT || 3001; // Changed to 3001 as per API docs
 
 // Middleware
 app.use(express.json());
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || "*",
-  methods: ["GET", "POST", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+
+// CORS configuration - allow all origins in dev, specific origins in production
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production' 
+    ? (process.env.CORS_ORIGIN || 'https://nodejs-37kv.onrender.com').split(',')
+    : true, // Allow all origins in development
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 
 // Routes (order matters - more specific routes first!)
 app.use("/api", authRoute);

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import Groq from "groq-sdk";
 
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+  apiKey: "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"
 });
 
 export const GeneratorController = async (req: Request, res: Response) => {
