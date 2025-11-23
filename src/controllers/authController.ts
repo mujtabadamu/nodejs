@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import adminModel from "../models/adminModel";
+import adminLoginModel from "../models/adminLoginModel";
 import jwt from "jsonwebtoken";
 import Joi from "joi";
 
@@ -97,8 +98,31 @@ class AuthController {
     }
   }
 
+  // Helper to get client IP address
+  private getClientIP(req: Request): string {
+    // Check for forwarded IP (from proxy/load balancer)
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+      const ips = Array.isArray(forwarded) ? forwarded[0] : forwarded;
+      return ips.split(',')[0].trim();
+    }
+    
+    // Check for real IP header
+    const realIP = req.headers['x-real-ip'];
+    if (realIP) {
+      return Array.isArray(realIP) ? realIP[0] : realIP;
+    }
+    
+    // Fallback to socket remote address
+    return req.socket.remoteAddress || req.ip || 'unknown';
+  }
+
   // POST /api/auth/login - Login admin
   async login(req: Request, res: Response) {
+    let adminId: number | null = null;
+    const ipAddress = this.getClientIP(req);
+    const userAgent = req.headers['user-agent'] || 'unknown';
+    
     try {
       // Validate request body
       const { error, value } = this.loginSchema.validate(req.body);
@@ -114,14 +138,34 @@ class AuthController {
       // Find admin by email
       const admin = await adminModel.findByEmail(email);
       if (!admin) {
+        // Log failed login attempt (no admin found)
+        await adminLoginModel.logLogin({
+          adminId: 0, // Use 0 for unknown admin
+          ipAddress,
+          userAgent,
+          success: false,
+          failureReason: 'Email not found',
+        });
+        
         return res.status(401).json({ 
           error: "Invalid credentials" 
         });
       }
 
+      adminId = admin.id;
+
       // Verify password
       const isValidPassword = await adminModel.verifyPassword(password, admin.password_hash);
       if (!isValidPassword) {
+        // Log failed login attempt (wrong password)
+        await adminLoginModel.logLogin({
+          adminId: admin.id,
+          ipAddress,
+          userAgent,
+          success: false,
+          failureReason: 'Invalid password',
+        });
+        
         return res.status(401).json({ 
           error: "Invalid credentials" 
         });
@@ -133,6 +177,16 @@ class AuthController {
         username: admin.username,
         email: admin.email,
       });
+
+      // Log successful login
+      await adminLoginModel.logLogin({
+        adminId: admin.id,
+        ipAddress,
+        userAgent,
+        success: true,
+      });
+
+      console.log(`✅ Admin login successful: ${admin.email} from ${ipAddress}`);
 
       res.status(200).json({
         success: true,
@@ -146,6 +200,22 @@ class AuthController {
       });
     } catch (error: any) {
       console.error("Error logging in:", error);
+      
+      // Log failed login attempt (server error) if we have an admin ID
+      if (adminId) {
+        try {
+          await adminLoginModel.logLogin({
+            adminId,
+            ipAddress,
+            userAgent,
+            success: false,
+            failureReason: 'Server error',
+          });
+        } catch (logError) {
+          console.error("Failed to log login attempt:", logError);
+        }
+      }
+      
       res.status(500).json({ 
         error: "Failed to login",
         details: error.message 

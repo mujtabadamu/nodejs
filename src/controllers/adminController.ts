@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import pool from "../config/db";
 import userProfileModel from "../models/userProfileModel";
 import chatModel from "../models/chatModel";
+import adminLoginModel from "../models/adminLoginModel";
 import { analyzeUserData, askAboutUser } from "../services/adminAIService";
 import Joi from "joi";
 
@@ -262,6 +263,26 @@ class AdminController {
       console.error("Error getting admin stats:", error);
       res.status(500).json({
         error: "Failed to get admin stats",
+        details: error.message,
+      });
+    }
+  }
+
+  // GET /api/admin/logins - Get admin login history
+  async getAdminLogins(req: Request, res: Response) {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const logins = await adminLoginModel.getAllLogins(limit);
+
+      res.status(200).json({
+        success: true,
+        logins,
+        count: logins.length,
+      });
+    } catch (error: any) {
+      console.error("Error getting admin logins:", error);
+      res.status(500).json({
+        error: "Failed to get admin logins",
         details: error.message,
       });
     }

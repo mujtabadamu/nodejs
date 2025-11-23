@@ -97,7 +97,8 @@ class LocationModel {
       
       result = await pool.query(insertQuery, values);
     } else {
-      // Update existing device (refresh location and increment visit count)
+      // Update existing device (refresh location and update last_seen)
+      // Only increment visit_count if last_seen was more than 5 minutes ago (new session)
       const updateQuery = `
         UPDATE locations 
         SET 
@@ -114,7 +115,11 @@ class LocationModel {
           timestamp = $12,
           user_agent = $13,
           last_seen = NOW(),
-          visit_count = visit_count + 1
+          visit_count = CASE 
+            WHEN last_seen < NOW() - INTERVAL '5 minutes' 
+            THEN visit_count + 1 
+            ELSE visit_count 
+          END
         WHERE device_id = $1
         RETURNING *
       `;

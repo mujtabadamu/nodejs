@@ -28,5 +28,10 @@ router.get(
   adminController.getAdminStats.bind(adminController)
 );
 
+router.get(
+  "/admin/logins",
+  adminController.getAdminLogins.bind(adminController)
+);
+
 export default router;
 
